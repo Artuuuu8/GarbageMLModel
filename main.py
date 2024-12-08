@@ -1,31 +1,63 @@
 import os
+import shutil
+import random
 import tensorflow as tf
 from tensorflow.keras import layers, models
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import kagglehub
+
+def split_dataset(source_dir, train_dir, val_dir, split_ratio=0.8):
+    if not os.path.exists(train_dir):
+        os.makedirs(train_dir)
+    if not os.path.exists(val_dir):
+        os.makedirs(val_dir)
+
+    for class_name in os.listdir(source_dir):
+        class_dir = os.path.join(source_dir, class_name)
+        if os.path.isdir(class_dir):
+            train_class_dir = os.path.join(train_dir, class_name)
+            val_class_dir = os.path.join(val_dir, class_name)
+            if not os.path.exists(train_class_dir):
+                os.makedirs(train_class_dir)
+            if not os.path.exists(val_class_dir):
+                os.makedirs(val_class_dir)
+
+            files = [f for f in os.listdir(class_dir) if os.path.isfile(os.path.join(class_dir, f))]
+            random.shuffle(files)
+            split_index = int(len(files) * split_ratio)
+            train_files = files[:split_index]
+            val_files = files[split_index:]
+
+            for file in train_files:
+                shutil.copy(os.path.join(class_dir, file), os.path.join(train_class_dir, file))
+            for file in val_files:
+                shutil.copy(os.path.join(class_dir, file), os.path.join(val_class_dir, file))
+
+            print(f"Copied {len(train_files)} files to {train_class_dir}")
+            print(f"Copied {len(val_files)} files to {val_class_dir}")
 
 # Download latest version of the dataset
 path = kagglehub.dataset_download("asdasdasasdas/garbage-classification")
 
 print("Path to dataset files:", path)
 
-# Assuming the dataset is organized in subdirectories for each class
+# Define ImageDataGenerator for training and validation
+train_datagen = ImageDataGenerator(
+    rescale=1./255,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True
+)
+
+val_datagen = ImageDataGenerator(rescale=1./255)
+
+# Define paths
+source_dir = os.path.join(path, 'Garbage classification')
 train_dir = os.path.join(path, 'train')
 val_dir = os.path.join(path, 'val')
 
-# Image Preprocessing with ImageDataGenerator
-train_datagen = ImageDataGenerator(
-    rescale=1.0/255.0,  # Normalize images to [0, 1]
-    rotation_range=40,  # Random rotations
-    width_shift_range=0.2,  # Random horizontal shifts
-    height_shift_range=0.2,  # Random vertical shifts
-    shear_range=0.2,  # Random shears
-    zoom_range=0.2,  # Random zoom
-    horizontal_flip=True,  # Random horizontal flips
-    fill_mode='nearest'  # Fill missing pixels after transformations
-)
-
-val_datagen = ImageDataGenerator(rescale=1.0/255.0)
+# Split the dataset
+split_dataset(source_dir, train_dir, val_dir)
 
 train_generator = train_datagen.flow_from_directory(
     train_dir,
