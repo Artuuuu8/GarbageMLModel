@@ -28,6 +28,8 @@ def split_dataset(source_dir, train_dir, val_dir, split_ratio=0.8):
             train_files = files[:split_index]
             val_files = files[split_index:]
 
+            print(f"Class: {class_name}, Total files: {len(files)}, Train files: {len(train_files)}, Val files: {len(val_files)}")
+
             for file in train_files:
                 shutil.copy(os.path.join(class_dir, file), os.path.join(train_class_dir, file))
             for file in val_files:
@@ -41,6 +43,14 @@ path = kagglehub.dataset_download("asdasdasasdas/garbage-classification")
 
 print("Path to dataset files:", path)
 
+# Define paths
+source_dir = os.path.join(path, 'Garbage classification', 'Garbage classification')
+train_dir = os.path.join(path, 'train')
+val_dir = os.path.join(path, 'val')
+
+# Split the dataset
+split_dataset(source_dir, train_dir, val_dir)
+
 # Define ImageDataGenerator for training and validation
 train_datagen = ImageDataGenerator(
     rescale=1./255,
@@ -50,14 +60,6 @@ train_datagen = ImageDataGenerator(
 )
 
 val_datagen = ImageDataGenerator(rescale=1./255)
-
-# Define paths
-source_dir = os.path.join(path, 'Garbage classification')
-train_dir = os.path.join(path, 'train')
-val_dir = os.path.join(path, 'val')
-
-# Split the dataset
-split_dataset(source_dir, train_dir, val_dir)
 
 train_generator = train_datagen.flow_from_directory(
     train_dir,
